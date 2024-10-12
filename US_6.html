@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contribution Interface</title>
+    <style>
+        @import url('https://fonts.cdnfonts.com/css/futura-std-4');
+        @import url('https://fonts.cdnfonts.com/css/bukhari-script');
+
+        body {
+            font-family: 'Futura', sans-serif;
+            line-height: 1.6;
+            background-color: #ffffff;
+            color: #6ec6e6;
+            padding-left: 5rem;
+            padding-right: 5rem;
+            padding-top: 1.5rem;
+        }
+
+        header {
+            font-family: "Bukhari Script", cursive;
+            font-size: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #6ec6e6;
+            padding-bottom: 1rem;
+            position: relative;
+        }
+
+        nav {
+            display: flex;
+            gap: 5.0rem;
+        }
+
+        nav a {
+            font-family: 'Futura', sans-serif;
+            color: #6f85a6;
+            text-decoration: none;
+            font-size: 23px;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: #6ec6e6;
+        }
+
+        .user-logo {
+            width: 50px;
+            height: 50px;
+            background-image: url('user-icon.png');
+            background-size: cover;
+            background-position: center;
+            border-radius: 50%;
+            border: none;
+            transition: color 0.3s;
+        }
+
+        hr {
+            height: 4px;
+            background-color: #6ec6e6;
+            border-color: #6ec6e6;
+            border: none;
+            border-radius: 20px;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+
+        .profile-section {
+            background-color: #e0f7fa;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            width: 30%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .admin-name {
+            font-size: 3em;
+            color: #40556e;
+            margin-bottom: 10px;
+        }
+
+        .email-label {
+            font-size: 1.2em;
+            color: #6f85a6;
+        }
+
+        .team-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .team-section h3 {
+            font-size: 1.5em;
+            color: #40556e;
+            margin-bottom: 10px;
+        }
+
+        .team-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .team-list li {
+            font-size: 1.2em;
+            color: #40556e;
+            padding: 5px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .team-list li:last-child {
+            border-bottom: none;
+        }
+
+        .graph-section {
+            width: 65%;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .title-box {
+            background-color: #6ec6e6; 
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        canvas {
+            width: 100%;
+            height: 350px;
+        }
+
+        button {
+            background-color: #00bcd4;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1em;
+            cursor: pointer;
+            align-self: flex-start;
+            margin-top: 20px;
+            width: fit-content;
+        }
+
+        button:hover {
+            background-color: #008c9e;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">Scrumble</div>
+        <nav>
+            <a href="#">Product Backlog</a>
+            <a href="#">Sprint Board</a>
+            <a href="#">My Team</a>
+        </nav>
+        <div class="user-logo"></div>
+    </header>
+
+    <hr>
+
+    <div class="container">
+        <div class="profile-section">
+            <h2 id="name" class="admin-name">Admin</h2>
+            <p class="email-label">Email: <span id="email">admin@gmail.com</span></p>
+            
+            <div class="team-section">
+                <h3>Team Members</h3>
+                <ul id="team-list" class="team-list"></ul>
+            </div>
+        </div>
+
+        <div class="graph-section">
+            <div class="title-box">Total Team Contribution</div>
+            <canvas id="contributionGraph"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            const teamMembers = [];
+            const timeSpentData = [];
+
+            // Calculate total log time for each user
+            users.forEach(user => {
+                if (user.logtimeshistory) {
+                    teamMembers.push(user.name || user.email); // Use name or email as fallback
+                    const totalTime = user.logtimeshistory.reduce((sum, log) => sum + log.timeSpent, 0);
+                    timeSpentData.push((totalTime / 60).toFixed(2)); // Convert total time from minutes to hours
+                }
+            });
+
+            // Update team list in the UI
+            const teamList = document.getElementById('team-list');
+            teamMembers.forEach(member => {
+                const li = document.createElement('li');
+                li.textContent = member;
+                teamList.appendChild(li);
+            });
+
+            // Graph implementation using Chart.js
+            const ctx = document.getElementById('contributionGraph').getContext('2d');
+            const contributionGraph = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: teamMembers,
+                    datasets: [{
+                        label: 'Total Time Spent (hours)',
+                        data: timeSpentData,
+                        backgroundColor: '#00bcd4',
+                        borderColor: '#00a0b5',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barThickness: 20,
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#2b2b2b',
+                            },
+                            grid: {
+                                color: '#e0e0e0',
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#2b2b2b',
+                                maxRotation: 45,
+                                minRotation: 45
+                            },
+                            grid: {
+                                color: '#e0e0e0',
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#2b2b2b'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

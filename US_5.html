@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contribution Interface</title>
+    <style>
+        @import url('https://fonts.cdnfonts.com/css/futura-std-4');
+        @import url('https://fonts.cdnfonts.com/css/bukhari-script');
+
+        body {
+            font-family: 'Futura', sans-serif;
+            line-height: 1.6;
+            background-color: #ffffff;
+            color: #6ec6e6;
+            padding-left: 5rem;
+            padding-right: 5rem;
+            padding-top: 1.5rem;
+        }
+
+        header {
+            font-family: "Bukhari Script", cursive;
+            font-size: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #6ec6e6;
+            padding-bottom: 1rem;
+            position: relative;
+        }
+
+        nav {
+            display: flex;
+            gap: 5.0rem;
+        }
+
+        nav a {
+            font-family: 'Futura', sans-serif;
+            color: #6f85a6;
+            text-decoration: none;
+            font-size: 23px;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: #6ec6e6;
+        }
+
+        .user-logo {
+            width: 50px;
+            height: 50px;
+            background-image: url('user-icon.png');
+            background-size: cover;
+            background-position: center;
+            border-radius: 50%;
+            border: none;
+            transition: color 0.3s;
+        }
+
+        hr {
+            height: 4px;
+            background-color: #6ec6e6;
+            border-color: #6ec6e6;
+            border: none;
+            border-radius: 20px;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+
+        .profile-section {
+            background-color: #e0f7fa;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            width: 30%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .profile-section h2 {
+            margin-bottom: 10px;
+            font-size: 2em;
+            color: #40556e;
+        }
+
+        .profile-section p {
+            margin: 5px 0;
+            font-size: 1.2em;
+            color: #40556e;
+        }
+
+        .profile-section span {
+            font-weight: bold;
+            color: #40556e;
+        }
+
+        .graph-section {
+            width: 65%;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .title-box {
+            background-color: #6ec6e6; 
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        canvas {
+            width: 100%;
+            height: 350px;
+        }
+
+        button {
+            background-color: #00bcd4;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1em;
+            cursor: pointer;
+            align-self: flex-start;
+            margin-top: 20px;
+            width: fit-content;
+        }
+
+        button:hover {
+            background-color: #008c9e;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header from Scrumble Page -->
+    <header>
+        <div class="logo">Scrumble</div>
+        <nav>
+            <a href="#">Product Backlog</a>
+            <a href="#">Sprint Board</a>
+            <a href="#">My Team</a>
+        </nav>
+        <div class="user-logo"></div>
+    </header>
+
+    <hr>
+
+    <div class="container">
+        <!-- Profile Section -->
+        <div class="profile-section">
+            <h2 id="name">Alex Lee</h2>
+            <p>Email: <span id="email">alexlee033@gmail.com</span></p>
+            <p>Password: <span id="password">alexlee033</span></p>
+            <button id="removeMember">Remove Member</button>
+        </div>
+
+        <!-- Graph Section -->
+        <div class="graph-section">
+            <div class="title-box">Individual Contribution</div>
+            <canvas id="contributionGraph"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Retrieve users from localStorage
+        const users = JSON.parse(localStorage.getItem('users')) || [];
+        const currentMember = JSON.parse(localStorage.getItem('currentMember'));
+        const memberId = currentMember ? currentMember.memberId : null; // Access the memberId
+
+        // Function to get logged time data for the current member
+        function getLoggedTimeData() {
+            const user = users.find(user => user.id === memberId);
+            const timeSpentMap = {};
+
+            if (user && user.logtimeshistory) {
+                user.logtimeshistory.forEach(log => {
+                    const date = log.localDate; 
+                    const timeSpent = log.timeSpent; // in minutes
+
+                    if (!timeSpentMap[date]) {
+                        timeSpentMap[date] = 0;
+                    }
+                    timeSpentMap[date] += timeSpent; // accumulate time spent for the same date
+                });
+            }
+
+            return timeSpentMap;
+        }
+
+        // Function to format time into hours for the chart
+        function formatTimeForChart(timeSpentMap) {
+            const formattedData = [];
+            const dates = Object.keys(timeSpentMap).sort(); // Sort dates
+
+            dates.forEach(date => {
+                formattedData.push((timeSpentMap[date] / 60).toFixed(2)); // convert to hours
+            });
+
+            return { dates, formattedData };
+        }
+
+        // Fetch logged time data and prepare it for the chart
+        const loggedTimeData = getLoggedTimeData();
+        const { dates, formattedData } = formatTimeForChart(loggedTimeData);
+
+        // Update HTML content
+        document.getElementById('name').textContent = currentMember ? currentMember.name : 'Unknown User';
+        document.getElementById('email').textContent = currentMember ? currentMember.email : 'No Email';
+        document.getElementById('password').textContent = currentMember ? currentMember.password : 'No Password';
+
+        // Graph implementation (using Chart.js)
+        const ctx = document.getElementById('contributionGraph').getContext('2d');
+        const contributionGraph = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: dates, // Dates on the x-axis
+                datasets: [{
+                    label: 'Time spent (hours)',
+                    data: formattedData, // Data points
+                    backgroundColor: '#00bcd4',
+                    borderColor: '#00a0b5',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    barThickness: 20,
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: Math.max(...formattedData.map(Number)) + 2, // Dynamic max value
+                        ticks: {
+                            color: '#2b2b2b',
+                        },
+                        grid: {
+                            color: '#e0e0e0',
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#2b2b2b',
+                            maxRotation: 45,  // Max rotation for the tick labels
+                            minRotation: 45   // Min rotation for the tick labels
+                        },
+                        grid: {
+                            color: '#e0e0e0',
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: '#2b2b2b'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
